@@ -1,0 +1,20 @@
+version: '2'
+services:
+  api:
+    image: "node:9"
+    volumes:
+      - ./:/server
+    working_dir: /server
+    command: node app.js
+    ports:
+     - "3000:3000"
+    networks:
+      - datanaliez-cluster
+    links:
+      - redis-redis-ha-master-svc2:redis
+  redis-redis-ha-master-svc2:
+    image: "redis:3.2"
+networks:
+  datanaliez-cluster:
+    external:
+      name: datanaliez_default

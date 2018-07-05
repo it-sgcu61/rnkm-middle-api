@@ -1,13 +1,12 @@
 var createError = require('http-errors');
 var express = require('express');
-var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var http = require('http');
-var debug = require('debug')('test-redis:server');
 var request = require('superagent');
 var registHandler = require('./routes/registration');
 var announceHandler = require('./routes/annouce');
+var chkStatusHandler = require('./routes/chkStatus');
 var config = require('./config')
 var sha256 = require('sha256')
 var app = express();
@@ -79,6 +78,8 @@ setupDTNL().then((agent)=>{
   app.use(cookieParser());
   app.use('/api/registration', registHandler);
   app.use('/api/announce', announceHandler(agent));
+  app.use('/api/chkStatus', chkStatusHandler(agent));
+
   // catch 404 and forward to error handler
   app.use(function(req, res, next) {
     next(createError(404));

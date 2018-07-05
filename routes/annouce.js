@@ -1,6 +1,8 @@
 var express = require('express');
 var config = require("../config")
-var createError = require('http-errors');
+function esc(str){
+  return (String(str) + '').replace(/[\\"']/g, '\\$&');
+}
 module.exports = function (DTNLagent) {
   var router = express.Router();
   router.get('/getHouse/:tel/:nationalID', async function(req, res, next){
@@ -10,7 +12,7 @@ module.exports = function (DTNLagent) {
     .send({
       sortby:"",
       orderby:"",
-      filter:`[{\"column_name\":\"dynamic/tel\",\"expression\":\"eq\",\"value\":\"${tel}\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"eq\",\"value\":\"${nationalID}\"}]`,
+      filter:`[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
     })
     .withCredentials().catch((err)=>{console.log(err);response["result"]="error";})
     response["result"] = possibleData.body.body?possibleData.body.body[0]["final-house"]:"not found"

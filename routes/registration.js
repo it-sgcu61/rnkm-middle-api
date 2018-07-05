@@ -1,7 +1,8 @@
 var express = require('express');
 var router = express.Router();
 var redis = require('redis');
-var client = redis.createClient(6379, 'redis-redis-ha-master-svc', {no_ready_check: true});
+var config = require("../config")
+var client = redis.createClient(6379, config.redisAddr, {no_ready_check: true});
 
 router.get('/check/:id', function(req, res, next){
   const id = req.params.id;

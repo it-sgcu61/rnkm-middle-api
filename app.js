@@ -1,8 +1,9 @@
-var createError = require('http-errors');
+﻿var createError = require('http-errors');
+var fs = require('fs');
 var express = require('express');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var http = require('http');
+var https = require('https');
 var request = require('superagent');
 var registHandler = require('./routes/registration');
 var announceHandler = require('./routes/annouce');
@@ -10,6 +11,12 @@ var chkStatusHandler = require('./routes/chkStatus');
 var config = require('./config')
 var sha256 = require('sha256')
 var app = express();
+
+var options = {
+  ca: fs.readFileSync('./bundle.crt'),
+  key: fs.readFileSync('./server.key'),
+  cert: fs.readFileSync('./server.crt')
+}
 
 const agent = request.agent()
 
@@ -94,7 +101,7 @@ setupDTNL().then((agent)=>{
     res.send("<h1 style='margin-bottom:30px'>sorry, but something went wrong. </h1> RNKM Middle-API system <br/> © 2018 Computer Engineering Student, Chulalongkorn University")
   });
   app.set('port', port);
-  var server = http.createServer(app);
+  var server = https.createServer(options,app);
   server.listen(port);
   server.on('error', onError);
 })

@@ -8,11 +8,13 @@ services:
     command: node app.js
     ports:
      - "3000:3000"
-    networks:
-      - datanaliez-cluster
+    links:
+      - redis-for-rnkm-redis-ha-master-svc
+    # networks:
+    #   - datanaliez-cluster
   redis-for-rnkm-redis-ha-master-svc:
     image: "redis:3.2"
-networks:
-  datanaliez-cluster:
-    external:
-      name: datanaliez_default
+# networks:
+#   datanaliez-cluster:
+#     external:
+#       name: datanaliez_default

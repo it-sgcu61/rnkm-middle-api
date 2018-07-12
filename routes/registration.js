@@ -32,4 +32,18 @@ router.get('/add/:id', function(req, res, next ){
   });
 });
 
+router.get('/del/MDg4OWE4ZWUwODQyY2Y5NmI2MjNhOGIyNmNjNDRkZTlkZDI1ZjI0ZjA1MTBhZjU1NDk5MjVkYzE3Yjc4Y2I4NA==/:id', function(req, res, next ){
+  const id = req.params.id;
+  var response = {}
+  client.srem('rnkm.student_list', id, function(err, reply){
+    if (err){
+      response["result"] = "failed"
+    }
+    else{
+      response["result"] = "success"
+    }
+    res.send(response)
+  });
+});
+
 module.exports = router;

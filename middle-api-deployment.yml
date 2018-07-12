@@ -7,7 +7,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
+  - port: 443
     targetPort: 3000
   selector:
     app: rnkm2018-middle-api-worker
@@ -30,11 +30,12 @@ spec:
     spec:
       containers:
       - name: rnkm2018-middle-api-worker
-        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.2
+        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.3
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /api/chkStatus
             port: 3000
+            scheme: HTTPS
           initialDelaySeconds: 3
           periodSeconds: 3

@@ -12,7 +12,7 @@ module.exports = function (DTNLagent) {
     .send({
       sortby:"",
       orderby:"",
-      filter:`[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
+      filter:`[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
     })
     .withCredentials().catch((err)=>{console.log(err);response["result"]="error";})
     response["result"] = possibleData.body.body?possibleData.body.body[0]["final-house"]:"not found"

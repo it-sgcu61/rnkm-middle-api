@@ -11,6 +11,7 @@ var chkStatusHandler = require('./routes/chkStatus');
 var config = require('./config')
 var sha256 = require('sha256')
 var app = express();
+var cors = require('cors')
 
 var options = {
   ca: fs.readFileSync('./bundle.crt'),
@@ -79,6 +80,7 @@ async function setupDTNL() {
 }
 const port = normalizePort(process.env.PORT || '3000');
 setupDTNL().then((agent)=>{
+  app.use(cors())
   app.use(logger('dev'));
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));

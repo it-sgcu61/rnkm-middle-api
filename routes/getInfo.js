@@ -11,19 +11,21 @@ module.exports = function (DTNLagent) {
     router.get('/all/:tel/:nationalID', async function (req, res, next) {
         const { tel, nationalID } = req.params;
         var response = {}
-        client.get(`pwd:${tel}`, async (err, reply) => {
-            if (reply === nationalID.toString())
-                client.hgetall(`info:${tel}`, (err, reply) => {
-                    console.log('reply1', reply);
-                    response['result'] = reply;
-                    response['cached'] = true;
-                    res.send(response);
-                })
+
+        client.hgetall(`info:${tel}`, async (err, reply) => {
+            if (reply && reply['dynamic/nationalID_URL'] === nationalID.toString()) {
+                console.log('cached', tel);
+                response['result'] = reply;
+                response['cached'] = true;
+                res.send(response);
+            }
             else if (reply !== null) {
-                response['result'] = {};
+                console.log('cached', tel);
+                response['result'] = '{}';
                 res.send(response);
             }
             else {
+                console.log('not cached:', tel);
                 var possibleData = await DTNLagent.post(`http://${config.dtnlADDR}/api/v1/get/data/${config.rnkmTablename}/1`)
                     .send({
                         sortby: "",
@@ -39,12 +41,8 @@ module.exports = function (DTNLagent) {
                         hash.push(key);
                         hash.push(info[key]);
                     }
-                    client.set(`iscache:${info['dynamic/tel']}`, '1', 'EX', config.expire);
                     client.hmset(`info:${info['dynamic/tel']}`, info);
-                    client.set(`pwd:${info['dynamic/tel']}`, info['dynamic/nationalID_URL']);
-                    client.hgetall(`info:${info['dynamic/tel']}`, (err, reply) => {
-                        console.log(reply);
-                    })
+                    client.expire(`info:${info['dynamic/tel']}`, config.expire);
                 }
                 response['cached'] = false;
                 res.send(response);

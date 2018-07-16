@@ -13,13 +13,13 @@ module.exports = function (DTNLagent) {
         var response = {}
 
         client.hgetall(`info:${tel}`, async (err, reply) => {
-            if (reply && reply['dynamic/nationalID_URL'] === nationalID.toString()) {
+            if (!err && reply && reply['dynamic/nationalID_URL'] === nationalID.toString()) {
                 console.log('cached', tel);
                 response['result'] = reply;
                 response['cached'] = true;
                 res.send(response);
             }
-            else if (reply !== null) {
+            else if (!err && reply) {
                 console.log('cached', tel);
                 response['result'] = '{}';
                 res.send(response);
@@ -35,17 +35,18 @@ module.exports = function (DTNLagent) {
                     .withCredentials().catch((err) => { console.log(err); response["result"] = "error"; })
                 response["result"] = possibleData.body.body ? possibleData.body.body[0] : "{}"
                 var info = possibleData.body.body ? possibleData.body.body[0] : {};
-                if (info) {
-                    var hash = [];
-                    for (var key in info) {
-                        hash.push(key);
-                        hash.push(info[key]);
+                try {
+                    console.log(info);
+                    if (info && info !== {}) {
+                        client.hmset(`info:${info['dynamic/tel']}`, info);
+                        client.expire(`info:${info['dynamic/tel']}`, 3600);
                     }
-                    client.hmset(`info:${info['dynamic/tel']}`, info);
-                    client.expire(`info:${info['dynamic/tel']}`, config.expire);
+                    response['cached'] = false;
+                    res.send(response);
                 }
-                response['cached'] = false;
-                res.send(response);
+                catch (err) {
+                    res.send(response)
+                }
             }
         })
     });

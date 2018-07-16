@@ -46,4 +46,18 @@ router.get('/del/MDg4OWE4ZWUwODQyY2Y5NmI2MjNhOGIyNmNjNDRkZTlkZDI1ZjI0ZjA1MTBhZjU
   });
 });
 
+router.get('/list/MDg4OWE4ZWUwODQyY2Y5NmI2MjNhOGIyNmNjNDRkZTlkZDI1ZjI0ZjA1MTBhZjU1NDk5MjVkYzE3Yjc4Y2I4NA==', function(req, res, next ){
+  const id = req.params.id;
+  var response = {}
+  client.smembers('rnkm.student_list', function(err, reply){
+    if (err){
+      response["result"] = err.message
+    }
+    else{
+      response["result"] = reply
+    }
+    res.send(response)
+  });
+});
+
 module.exports = router;

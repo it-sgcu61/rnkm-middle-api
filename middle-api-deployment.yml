@@ -19,7 +19,7 @@ metadata:
   labels:
     app: rnkm2018-middle-api-worker
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: rnkm2018-middle-api-worker
@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: rnkm2018-middle-api-worker
-        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.3
+        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.7
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -38,4 +38,4 @@ spec:
             port: 3000
             scheme: HTTPS
           initialDelaySeconds: 3
-          periodSeconds: 3
+          periodSeconds: 20

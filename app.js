@@ -9,6 +9,7 @@ var registHandler = require('./routes/registration');
 var announceHandler = require('./routes/annouce');
 var chkStatusHandler = require('./routes/chkStatus');
 var getInfoHandler = require('./routes/getInfo');
+var editInfoHandler = require('./routes/editInfo');
 var config = require('./config')
 var sha256 = require('sha256')
 var app = express();
@@ -90,7 +91,7 @@ setupDTNL().then((agent) => {
   app.use('/api/announce', announceHandler(agent));
   app.use('/api/chkStatus', chkStatusHandler(agent));
   app.use('/api/getInfo', getInfoHandler(agent));
-
+  app.use('/api/editInfo', editInfoHandler(agent));
   // catch 404 and forward to error handler
   app.use(function (req, res, next) {
     next(createError(404));

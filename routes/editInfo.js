@@ -31,7 +31,7 @@ module.exports = function (DTNLagent) {
             let key = editables[idx];
             let val = validators[idx];
             if (f[key] && RegExp(val).test(key) === true)
-                toEdit.push({ "column_name": key, 'value': `"${esc(f[key])}"` })
+                toEdit.push({ "columnName": key, 'value': `"${esc(f[key])}"` })
             else if (f[key] && !RegExp(val).test(key) === true)
                 console.log(`invalid data for ${key}: ${f[key]} expected /${validators[idx]}/`)
         }
@@ -58,7 +58,7 @@ module.exports = function (DTNLagent) {
                     res.send('error');
 
             }
-            else if (!err && reply) {
+            else if (!err && reply) { // wrong password
                 console.log('cached', tel, false);
 
                 // response['result'] = '{}';
@@ -66,41 +66,45 @@ module.exports = function (DTNLagent) {
             }
             else {
                 console.log('not cached:', tel);
+                console.log('filter', `[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`)
                 var possibleData = await DTNLagent.post(`http://${config.dtnlADDR}/api/v1/get/data/${config.rnkmTablename}/1`)
                     .send({
                         sortby: "",
                         orderby: "",
-                        filter: `[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
+                        filter: `[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`
                     })
-                    .withCredentials().catch((err) => { console.log(err); res.send('error') })
+                    .withCredentials().catch((err) => { console.log("DTNL 500"); return res.send('error DTNL') })
+                console.log(possibleData.body.body)
+                if (possibleData.body.body) // not error
+                    try {
+                        var info = possibleData.body.body ? possibleData.body.body[0] : {};
+                        if (info && JSON.stringify(info) !== '{}') {
+                            client.hmset(`info:${info['dynamic/tel']}`, info);
+                            client.expire(`info:${info['dynamic/tel']}`, 3600);
 
-                var info = possibleData.body.body ? possibleData.body.body[0] : {};
-                try {
-                    console.log(info);
-                    if (info && JSON.stringify(info) !== '{}') {
-                        client.hmset(`info:${info['dynamic/tel']}`, info);
-                        client.expire(`info:${info['dynamic/tel']}`, 3600);
-
-                        if (info._id && toEdit.length !== 0)
-                            agent.post(`http://${config.dtnlADDR}/api/v1/edit/editCheckedData/${config.rnkmTablename}`)
-                                .send({
-                                    modify_list: JSON.stringify({ idList: [info._id], modifyList: toEdit })
-                                })
-                                .withCredentials()
-                                .then(() => {
-                                    return res.send('true');
-                                })
-                                .catch((err) => { console.log(err); return res.send('error') }) // OK
-                        else
-                            res.send('error');
+                            if (info._id && toEdit.length !== 0)
+                                DTNLagent.post(`http://${config.dtnlADDR}/api/v1/edit/editCheckedData/${config.rnkmTablename}`)
+                                    .send({
+                                        modify_list: JSON.stringify({ idList: [info._id], modifyList: toEdit })
+                                    })
+                                    .withCredentials()
+                                    .then(() => {
+                                        return res.send('true');
+                                    })
+                                    .catch((err) => { console.log(err); res.send('error DTNL') }) // OK
+                            else
+                                res.send('error');
+                        }
+                        else {
+                            res.send('false NONE');
+                        }
                     }
-                    else {
-                        res.send('false');
+                    catch (err) {
+                        console.log(err);
+                        res.send('false ERR')
                     }
-                }
-                catch (err) {
-                    res.send('false')
-                }
+                else
+                    res.send('false none')
             }
         })
     });

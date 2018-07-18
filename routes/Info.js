@@ -17,7 +17,7 @@ module.exports = function (DTNLagent) {
     router.post('/getInfo', async function (req, res, next) {
         const { tel, nationalID } = req.body;
         var response = {}
-
+        console.log(req.body)
         client.getAsync(`version:${nationalID}`)
             .then(value => { // return whether we should return data immediately
                 if (value && parseInt(value) === ver[nationalID] && tel === cache['dynamic/tel'])
@@ -56,20 +56,26 @@ module.exports = function (DTNLagent) {
                             .send({
                                 sortby: "",
                                 orderby: "",
-                                filter: `[{\"column_name\":\"dynamic/tel\",\"expression\":\"like\",\"value\":\"^${esc(tel)}$\"},{\"column_name\":\"dynamic/nationalID_URL\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
+                                filter: `[{\"column_name\":\"dynamic/nationalID\",\"expression\":\"like\",\"value\":\"^${esc(nationalID)}$\"}]`,
                             })
-                            .withCredentials().catch((err) => { console.log(err); return { test: "omegalul" } })
+                            .withCredentials().catch((err) => {res.status(500)})
 
                         try {
                             if (data.body.body && data.body.body.length === 1) {
-                                var info = data.body.body[0];
-                                cache[nationalID] = info;
-                                ver[nationalID] = 0;
-                                await client.hmsetAsync(`info:${nationalID}`, info);
-                                await client.setAsync(`version:${nationalID}`, 0);
-                                cache[nationalID].version = ver[nationalID];
-                                cache[nationalID].isCached = false;
-                                return cache[nationalID];
+                                if(data.body.body[0]["dynamic/tel"] === tel){
+                                    var info = data.body.body[0];
+                                    cache[nationalID] = info;
+                                    ver[nationalID] = 0;
+                                    await client.hmsetAsync(`info:${nationalID}`, info);
+                                    await client.setAsync(`version:${nationalID}`, 0);
+                                    client.expire(`info:${nationalID}`, 600);
+                                    client.expire(`version:${nationalID}`, 600);
+                                    cache[nationalID].version = ver[nationalID];
+                                    cache[nationalID].isCached = false;
+                                    return cache[nationalID];
+                                }else{
+                                    return {result:"IncorrectTel"}
+                                }
                             }
                             else {
                                 throw new Error(`NOT 1 reply  ${tel}-> ` + data.body.body.length);
@@ -77,9 +83,8 @@ module.exports = function (DTNLagent) {
                         }
                         catch (err) {
                             console.log(err);
-                            return {};
+                            return {result:"notFound"};
                         }
-                        return 'end';
                     }
                 }
             })
@@ -87,15 +92,21 @@ module.exports = function (DTNLagent) {
                 res.send(data);
             })
             .catch(err => {
-                console.log(err);
-                res.send('error');
+                res.status(500)
+                res.send({result:"error at line 96."})
             })
     });
     router.post('/editInfo', async function (req, res, next) {
         var { tel, nationalID, formData } = req.body;
 
         try {
-            if (cache[nationalID] && cache[nationalID]['dynamic/tel'] === tel) {
+            var userdata = cache[nationalID]
+            if (!userdata){
+                userdata = await client.hgetallAsync(`info:${nationalID}`)
+                cache[nationalID] = userdata;
+                ver[nationalID] = parseInt(await client.getAsync(`version:${nationalID}`));
+            }
+            if (userdata && userdata['dynamic/tel'] === tel) {
                 // only SOME Fields are editable
                 var editables = ["dynamic/nickname", "dynamic/religion", "dynamic/lineID", "dynamic/facebook",
                     "dynamic/emergency_tel", "dynamic/emergency_tel_relation", "dynamic/RCU_required", "dynamic/RCU_reason",
@@ -106,28 +117,32 @@ module.exports = function (DTNLagent) {
                     "^", "^", "^",
                     "^", "^"];
 
-                newCache = cache[nationalID];
+                var newCache = userdata;
                 // console.log(newCache)
                 formData = JSON.parse(formData);
                 for (var idx in validators) {
-                    let key = editables[idx], // handle undefined 
+                    let key = editables[idx], // handle undefined
                         valid = validators[idx];
-                    let value = formData[key] ? formData[key].toString() : 'undefined';
-                    if (RegExp(valid).test(value) === true)
+                    let value = formData[key] ? formData[key].toString() : undefined;
+                    if (value && RegExp(valid).test(value) === true)
                         newCache[key] = value;
                 }
-                // console.log(cache[nationalID], '->', newCache);
+                delete newCache["isCached"]
+                delete newCache["version"]
                 client.hmset(`info:${nationalID}`, newCache);
                 client.incr(`version:${nationalID}`);
-                res.send('pass');
+                client.persist(`info:${nationalID}`);
+                client.persist(`version:${nationalID}`);
+                client.sadd("editList", nationalID)
+                res.send({result:"OK"});
             }
             else {
-                res.send('error!');
+                res.send({result:"permission denied"});
             }
         }
         catch (err) {
-            console.log(err);
-            res.send('error2');
+            res.status(500)
+            res.send({result:"an error occurred."});
         }
     });
     return router

@@ -2,7 +2,7 @@
 var fs = require('fs');
 var express = require('express');
 var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+var morgan = require('morgan');
 var https = require('https');
 var request = require('superagent');
 var registHandler = require('./routes/registration');
@@ -13,6 +13,7 @@ var config = require('./config')
 var sha256 = require('sha256')
 var app = express();
 var cors = require('cors')
+const Influx = require('influx')
 var options = {
   ca: fs.readFileSync('./bundle.crt'),
   key: fs.readFileSync('./server.key'),
@@ -20,6 +21,21 @@ var options = {
 }
 
 const agent = request.agent()
+const logger = new Influx.InfluxDB({
+  host: 'datanaliez-api-logdb-influxdb',
+  database: 'MIDDLE-API-LOG',
+  schema: [
+    {
+      measurement: 'LOG',
+      fields: {
+        ip: Influx.FieldType.STRING,
+        status: Influx.FieldType.INTEGER,
+        latency: Influx.FieldType.FLOAT,
+      },
+      tags: ['url','ip','status']
+    }
+  ]
+})
 
 function onError(error) {
   if (error.syscall !== 'listen') {
@@ -82,30 +98,39 @@ async function setupDTNL() {
 const port = normalizePort(process.env.PORT || '3000');
 setupDTNL().then((agent) => {
   app.use(cors())
-  app.use(logger('dev'));
+  // app.use(logger('dev'));
+  app.use(morgan(function (tokens, req, res) {
+    logger.writePoints([
+      {
+        measurement: 'LOG',
+        tags: { url: tokens.url(req, res), ip : tokens["remote-addr"](req, res), status: tokens.status(req, res)},
+        fields: { ip : tokens["remote-addr"](req, res), status: tokens.status(req, res), latency: tokens['response-time'](req, res) },
+      }
+    ])
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
   app.use('/api/registration', registHandler);
   app.use('/api/announce', announceHandler(agent));
   app.use('/api/chkStatus', chkStatusHandler(agent));
-  app.use('/api/', InfoHandler(agent));
+  app.use('/api/chkInfo', InfoHandler(agent));
   // catch 404 and forward to error handler
   app.use(function (req, res, next) {
     next(createError(404));
   });
   // error handler
-  // app.use(function (err, req, res, next) {
-  //   // set locals, only providing error in development
-  //   res.locals.message = err.message;
-  //   res.locals.error = req.app.get('env') === 'development' ? err : {};
-  //   // render the error page
-  //   res.status(err.status || 500);
-  //   res.send("<h1 style='margin-bottom:30px'>sorry, but something went wrong. </h1> RNKM Middle-API system <br/> © 2018 Computer Engineering Student, Chulalongkorn University")
-  // });
+  app.use(function (err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+    // render the error page
+    res.status(err.status || 500);
+    res.send("<h1 style='margin-bottom:30px'>sorry, but something went wrong. </h1> RNKM Middle-API system <br/> © 2018 Computer Engineering Student, Chulalongkorn University")
+  });
   app.set('port', port);
   var server = https.createServer(options, app);
   server.listen(port);
   server.on('error', onError);
-})
-  .catch((error) => { throw error; process.exit(1) })
+}).catch((error) => { throw error; process.exit(1) })
+module.exports = setupDTNL

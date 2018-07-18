@@ -30,8 +30,8 @@ spec:
     spec:
       containers:
       - name: rnkm2018-middle-api-worker
-        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.7
-        imagePullPolicy: Always
+        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.9_k8s
+        imagePullPolicy: Alway
         livenessProbe:
           httpGet:
             path: /api/chkStatus

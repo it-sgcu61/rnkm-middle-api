@@ -10,8 +10,21 @@ services:
      - "3000:3000"
     links:
       - redis-for-rnkm-redis-ha-master-svc
+      - datanaliez-api-logdb-influxdb
+  sentinel:
+    image: "node:9"
+    volumes:
+      - ./:/server
+    working_dir: /server
+    command: node sentinel.js
+    links:
+      - redis-for-rnkm-redis-ha-master-svc
     # networks:
     #   - datanaliez-cluster
+  datanaliez-api-logdb-influxdb:
+    image: "influxdb:1.4-alpine"
+    ports:
+     - "8086:8086"
   redis-for-rnkm-redis-ha-master-svc:
     image: "redis:3.2"
 # networks:

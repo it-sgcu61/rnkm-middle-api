@@ -23,7 +23,10 @@ var options = {
 const agent = request.agent()
 const logger = new Influx.InfluxDB({
   host: 'datanaliez-api-logdb-influxdb',
+  port:8086,
   database: 'MIDDLE-API-LOG',
+  username: 'admin',
+  password: 'en0n1gm0us',
   schema: [
     {
       measurement: 'LOG',

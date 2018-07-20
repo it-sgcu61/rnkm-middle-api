@@ -30,8 +30,8 @@ spec:
     spec:
       containers:
       - name: rnkm2018-middle-api-worker
-        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.9_k8s
-        imagePullPolicy: Alway
+        image: gcr.io/skylab-184008/rnkm_middle_api:1.0.15
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /api/chkStatus
@@ -39,3 +39,24 @@ spec:
             scheme: HTTPS
           initialDelaySeconds: 3
           periodSeconds: 20
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: middle-api-sentinel
+  labels:
+    app: middle-api-sentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: middle-api-sentinel
+  template:
+    metadata:
+      labels:
+        app: middle-api-sentinel
+    spec:
+      containers:
+      - name: middle-api-sentinel
+        image: gcr.io/skylab-184008/rnkm_middle_api_sentinel:1.0.4
+        imagePullPolicy: Always

@@ -68,8 +68,8 @@ module.exports = function (DTNLagent) {
                                     ver[nationalID] = 0;
                                     await client.hmsetAsync(`info:${nationalID}`, info);
                                     await client.setAsync(`version:${nationalID}`, 0);
-                                    client.expire(`info:${nationalID}`, 600);
-                                    client.expire(`version:${nationalID}`, 600);
+                                    client.expire(`info:${nationalID}`, 1200);
+                                    client.expire(`version:${nationalID}`, 1200);
                                     cache[nationalID].version = ver[nationalID];
                                     cache[nationalID].isCached = false;
                                     return cache[nationalID];
@@ -108,14 +108,15 @@ module.exports = function (DTNLagent) {
             }
             if (userdata && userdata['dynamic/tel'] === tel) {
                 // only SOME Fields are editable
-                var editables = ["dynamic/nickname", "dynamic/religion", "dynamic/lineID", "dynamic/facebook",
-                    "dynamic/emergency_tel", "dynamic/emergency_tel_relation", "dynamic/RCU_required", "dynamic/RCU_reason",
+                var editables = ["hidden/imageURL", "dynamic/nameprefix", "dynamic/fullname", "dynamic/nickname",
+                    "dynamic/emergency_tel","dynamic/faculty", "dynamic/RCU_required", "dynamic/lineID", "dynamic/facebook",
+                    "dynamic/emergency_tel_relation", "dynamic/religion", "dynamic/RCU_reason",
                     "dynamic/congenital_disease", "dynamic/regularDrug", "dynamic/drugAllergy",
-                    "dynamic/disorders", "dynamic/foodAllergies"];
+                    "dynamic/disorders", "dynamic/foodAllergies",];
                 var validators = [`^`, "^", "^", "^",
                     "0[689][0-9]-[0-9]{3}-[0-9]{4}", "^", "(^yes$)|(^no$)", "^",
                     "^", "^", "^",
-                    "^", "^"];
+                    "^", "^","^", "^", "^", "^"];
 
                 var newCache = userdata;
                 // console.log(newCache)
